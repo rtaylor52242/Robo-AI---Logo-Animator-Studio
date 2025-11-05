@@ -1,0 +1,5 @@
+{
+  "name": "Robo AI - Logo Animator Studio",
+  "description": "Design a unique logo for your company from a description, and then watch it come to life with a stunning animation. Utilizes Gemini for both image and video generation.",
+  "requestFramePermissions": []
+}
