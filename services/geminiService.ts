@@ -96,7 +96,7 @@ export const animateLogo = async (
     } catch (error) {
         console.error("Error animating logo:", error);
         if (error instanceof Error && error.message.includes("Requested entity was not found.")) {
-            throw new Error("API key is invalid or not found. Please select a valid API key.");
+            throw new Error("API key may be invalid. Please ensure it is configured correctly in the environment.");
         }
         throw new Error("Failed to animate logo. Please try again.");
     }

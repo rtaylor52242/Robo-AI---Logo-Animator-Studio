@@ -1,11 +1,9 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { generateLogoImage, animateLogo } from './services/geminiService';
 import { AspectRatio } from './types';
 import { LoadingSpinner, SparklesIcon, VideoIcon, ResetIcon } from './components/icons';
 
 const App: React.FC = () => {
-    const [apiKeySelected, setApiKeySelected] = useState<boolean | null>(null);
     const [prompt, setPrompt] = useState<string>('A minimalist fox icon for a tech startup');
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
     
@@ -17,30 +15,6 @@ const App: React.FC = () => {
     const [videoLoadingMessage, setVideoLoadingMessage] = useState<string>('');
 
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const checkApiKey = async () => {
-            if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
-                const hasKey = await window.aistudio.hasSelectedApiKey();
-                setApiKeySelected(hasKey);
-            } else {
-                 // Fallback for environments where aistudio is not available
-                setApiKeySelected(!!process.env.API_KEY);
-            }
-        };
-        checkApiKey();
-    }, []);
-
-    const handleSelectKey = async () => {
-        try {
-            await window.aistudio.openSelectKey();
-            // Optimistically assume key selection is successful.
-            setApiKeySelected(true);
-        } catch(e) {
-            console.error("Error opening select key dialog:", e);
-            setError("Could not open API key selection. Please ensure you are in a supported environment.");
-        }
-    };
     
     const handleGenerateLogo = async () => {
         if (!prompt.trim()) {
@@ -68,9 +42,6 @@ const App: React.FC = () => {
             const videoUrl = await animateLogo(generatedImage, aspectRatio, setVideoLoadingMessage);
             setGeneratedVideoUrl(videoUrl);
         } catch (e) {
-            if (e instanceof Error && e.message.includes("API key is invalid")) {
-                 setApiKeySelected(false); // Reset key state to re-prompt user
-            }
             setError(e instanceof Error ? e.message : 'An unknown error occurred.');
         } finally {
             setIsGeneratingVideo(false);
@@ -86,36 +57,7 @@ const App: React.FC = () => {
         setIsGeneratingVideo(false);
     };
 
-    const renderApiKeyPrompt = () => (
-        <div className="w-full max-w-lg mx-auto text-center">
-            <div className="bg-gray-800 border border-indigo-500/30 shadow-2xl rounded-xl p-8">
-                <h2 className="text-2xl font-bold text-indigo-400 mb-4">Welcome to Robo AI - Logo Animator Studio</h2>
-                <p className="text-gray-300 mb-6">
-                    To generate video animations with Veo, you need to select a personal API key. 
-                    This will be used for billing your usage of the model.
-                </p>
-                <button
-                    onClick={handleSelectKey}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
-                >
-                    Select API Key
-                </button>
-                <p className="text-xs text-gray-500 mt-4">
-                    For more information, see the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-400">billing documentation</a>.
-                </p>
-            </div>
-        </div>
-    );
-    
     const renderContent = () => {
-        if (apiKeySelected === null) {
-            return <div className="flex justify-center items-center h-full"><LoadingSpinner className="w-12 h-12" /></div>;
-        }
-        
-        if (!apiKeySelected) {
-            return renderApiKeyPrompt();
-        }
-
         if (generatedVideoUrl) {
             return <VideoResult url={generatedVideoUrl} onReset={handleReset} />;
         }
