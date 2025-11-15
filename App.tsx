@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { generateLogoImage, animateLogo } from './services/geminiService';
 import { AspectRatio } from './types';
-import { LoadingSpinner, SparklesIcon, VideoIcon, ResetIcon } from './components/icons';
+import { LoadingSpinner, SparklesIcon, VideoIcon, ResetIcon, QuestionMarkCircleIcon, CloseIcon } from './components/icons';
 
 const App: React.FC = () => {
     const [prompt, setPrompt] = useState<string>('A minimalist fox icon for a tech startup');
@@ -15,6 +16,7 @@ const App: React.FC = () => {
     const [videoLoadingMessage, setVideoLoadingMessage] = useState<string>('');
 
     const [error, setError] = useState<string | null>(null);
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
     
     const handleGenerateLogo = async () => {
         if (!prompt.trim()) {
@@ -93,14 +95,82 @@ const App: React.FC = () => {
                     Design your brand's identity and bring it to life with AI-powered generation and animation.
                 </p>
             </header>
-            <main className="w-full max-w-4xl">
+            <main className="w-full max-w-4xl relative">
+                <button 
+                    onClick={() => setIsHelpModalOpen(true)}
+                    className="absolute -top-4 right-0 md:-top-2 md:-right-2 text-gray-400 hover:text-indigo-400 transition-colors duration-200 z-10 p-2"
+                    aria-label="Help"
+                >
+                    <QuestionMarkCircleIcon className="w-8 h-8" />
+                </button>
+
                  {error && <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg relative mb-6 text-center" role="alert">{error}</div>}
                  {renderContent()}
             </main>
+            {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
             <style jsx global>{`
                 .bg-dots-pattern {
                     background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
                     background-size: 20px 20px;
+                }
+            `}</style>
+        </div>
+    );
+};
+
+const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    return (
+        <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-modal-title"
+        >
+            <div 
+                className="bg-gray-800 border border-indigo-500/30 rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative transform transition-all duration-300 scale-95 animate-modal-in"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                    aria-label="Close help"
+                >
+                    <CloseIcon className="w-6 h-6" />
+                </button>
+                <h2 id="help-modal-title" className="text-2xl font-bold text-indigo-400 mb-4">How It Works</h2>
+                <div className="space-y-4 text-gray-300">
+                    <div>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 1: Design Your Logo</h3>
+                        <p>Start by writing a detailed description of the logo you want in the text box. The more specific you are, the better the result! For example, try "A majestic lion head logo, geometric style, gold on a black background".</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 2: Generate the Image</h3>
+                        <p>Click the "Generate Logo" button. The AI will take a moment to create a unique logo based on your description.</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 3: Animate Your Logo</h3>
+                        <p>Once your logo appears, choose your desired video aspect ratio (16:9 for landscape or 9:16 for portrait). Then, click "Animate Logo". This process can take a few minutes as the AI brings your logo to life.</p>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 4: View & Start Over</h3>
+                        <p>Your animated logo will appear in a video player. You can watch it, and when you're ready to create another, just click "Start Over".</p>
+                    </div>
+                </div>
+                <button 
+                    onClick={onClose}
+                    className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Got it!
+                </button>
+            </div>
+            <style jsx global>{`
+                @keyframes modal-in {
+                    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                .animate-modal-in {
+                    animation: modal-in 0.3s ease-out forwards;
                 }
             `}</style>
         </div>
