@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateLogoImage, animateLogo } from './services/geminiService';
 import { AspectRatio } from './types';
 import { LoadingSpinner, SparklesIcon, VideoIcon, ResetIcon, QuestionMarkCircleIcon, CloseIcon } from './components/icons';
 
 const App: React.FC = () => {
+    const [hasKey, setHasKey] = useState<boolean>(false);
     const [prompt, setPrompt] = useState<string>('A minimalist fox icon for a tech startup');
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
     
@@ -17,6 +18,26 @@ const App: React.FC = () => {
 
     const [error, setError] = useState<string | null>(null);
     const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
+
+    useEffect(() => {
+        const checkKey = async () => {
+            if (window.aistudio && window.aistudio.hasSelectedApiKey) {
+                const hasSelected = await window.aistudio.hasSelectedApiKey();
+                setHasKey(hasSelected);
+            } else {
+                // Fallback if not running in the specific environment
+                setHasKey(true);
+            }
+        };
+        checkKey();
+    }, []);
+
+    const handleSelectKey = async () => {
+        if (window.aistudio) {
+            await window.aistudio.openSelectKey();
+            setHasKey(true);
+        }
+    };
     
     const handleGenerateLogo = async () => {
         if (!prompt.trim()) {
@@ -44,7 +65,16 @@ const App: React.FC = () => {
             const videoUrl = await animateLogo(generatedImage, aspectRatio, setVideoLoadingMessage);
             setGeneratedVideoUrl(videoUrl);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'An unknown error occurred.');
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            if (errorMessage.includes("Requested entity was not found")) {
+                setError("Access to the video model requires a valid paid API key.");
+                if (window.aistudio) {
+                    await window.aistudio.openSelectKey();
+                    setHasKey(true);
+                }
+            } else {
+                setError(errorMessage);
+            }
         } finally {
             setIsGeneratingVideo(false);
         }
@@ -60,6 +90,10 @@ const App: React.FC = () => {
     };
 
     const renderContent = () => {
+        if (!hasKey) {
+            return <KeySelectionView onSelectKey={handleSelectKey} />;
+        }
+
         if (generatedVideoUrl) {
             return <VideoResult url={generatedVideoUrl} onReset={handleReset} />;
         }
@@ -118,6 +152,24 @@ const App: React.FC = () => {
     );
 };
 
+const KeySelectionView: React.FC<{ onSelectKey: () => void }> = ({ onSelectKey }) => (
+    <div className="bg-gray-800/80 backdrop-blur-sm border border-indigo-500/20 shadow-2xl rounded-xl p-8 text-center transition-all duration-300">
+        <h2 className="text-2xl font-bold text-indigo-400 mb-4">Authentication Required</h2>
+        <p className="text-gray-300 mb-6">
+            To access the high-quality Veo video generation models, you must select a valid API key from a paid Google Cloud Project.
+        </p>
+        <button
+            onClick={onSelectKey}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 mb-4"
+        >
+            Select API Key
+        </button>
+        <div className="text-sm text-gray-500">
+            Need help? <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">View Billing Documentation</a>
+        </div>
+    </div>
+);
+
 const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <div 
@@ -141,19 +193,23 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <h2 id="help-modal-title" className="text-2xl font-bold text-indigo-400 mb-4">How It Works</h2>
                 <div className="space-y-4 text-gray-300">
                     <div>
-                        <h3 className="font-semibold text-lg text-white mb-1">Step 1: Design Your Logo</h3>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 1: API Key Selection</h3>
+                        <p>Connect a paid Google Cloud Project API key to enable the advanced video generation capabilities.</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 2: Design Your Logo</h3>
                         <p>Start by writing a detailed description of the logo you want in the text box. The more specific you are, the better the result! For example, try "A majestic lion head logo, geometric style, gold on a black background".</p>
                     </div>
                     <div>
-                        <h3 className="font-semibold text-lg text-white mb-1">Step 2: Generate the Image</h3>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 3: Generate the Image</h3>
                         <p>Click the "Generate Logo" button. The AI will take a moment to create a unique logo based on your description.</p>
                     </div>
                     <div>
-                        <h3 className="font-semibold text-lg text-white mb-1">Step 3: Animate Your Logo</h3>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 4: Animate Your Logo</h3>
                         <p>Once your logo appears, choose your desired video aspect ratio (16:9 for landscape or 9:16 for portrait). Then, click "Animate Logo". This process can take a few minutes as the AI brings your logo to life.</p>
                     </div>
                      <div>
-                        <h3 className="font-semibold text-lg text-white mb-1">Step 4: View & Start Over</h3>
+                        <h3 className="font-semibold text-lg text-white mb-1">Step 5: View & Start Over</h3>
                         <p>Your animated logo will appear in a video player. You can watch it, and when you're ready to create another, just click "Start Over".</p>
                     </div>
                 </div>

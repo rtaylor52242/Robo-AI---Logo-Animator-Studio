@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { AspectRatio } from '../types';
 
@@ -95,8 +96,10 @@ export const animateLogo = async (
 
     } catch (error) {
         console.error("Error animating logo:", error);
-        if (error instanceof Error && error.message.includes("Requested entity was not found.")) {
-            throw new Error("API key may be invalid. Please ensure it is configured correctly in the environment.");
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        if (errorMessage.includes("Requested entity was not found")) {
+            throw new Error("Requested entity was not found.");
         }
         throw new Error("Failed to animate logo. Please try again.");
     }
